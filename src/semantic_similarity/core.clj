@@ -32,7 +32,7 @@
       (/ (- indent-count 3) 4)))) 
  
 
-(defn parse-word-trees [word-trees]
+(defn tree-to-level-map [word-trees]
     (flatten (map 
       #(map 
         (fn [synonyms] 
@@ -40,8 +40,8 @@
           (map
             (fn [split-synonym] 
               (hash-map 
-                (get-only-alpha split-synonym)
-                level)) 
+                :word (get-only-alpha split-synonym)
+                :level level)) 
             (split synonyms #","))))
             (rest (split % #"\n")))
     ;discard the first part
@@ -49,11 +49,45 @@
       ;break up the word trees by Sense 
       (apply concat (map #(split %1 #"Sense") word-trees)))))) 
 
+(defn collect-duplicates [word-tree]
+  (into {} (filter #(if (= "" (first %1)) false true)
+    (reduce 
+      #(if (contains? %1 (%2 :word))
+          (if (< (%1 (%2 :word)) (%2 :level))
+            (assoc %1 (%2 :word) (%2 :level))
+            %1) 
+        (assoc %1 (%2 :word) (%2 :level)))
+      {}
+      word-tree))))
 
-(defn test-semantics []
-  (-> dog
-    (parse-word-trees)))
+(defn get-common-ancestors [tree1 tree2]
+  (map 
+    #(let [word (first %1)]
+        {word (+ (tree1 word) (tree2 word))})
+    (filter 
+      #(if (contains? tree2 (first %1))
+        true
+        false)
+      tree1)))
 
+(defn test-semantics [word1 word2]
+  (let [
+    
+    tree1
+    
+    (-> word1 
+    (get-word-trees)
+    (tree-to-level-map)
+    (collect-duplicates))
+
+    tree2
+
+    (-> word2 
+    (get-word-trees)
+    (tree-to-level-map)
+    (collect-duplicates))] 
+
+    (get-common-ancestors tree1 tree2))) 
 
 
 
