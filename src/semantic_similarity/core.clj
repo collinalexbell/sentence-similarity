@@ -79,12 +79,15 @@
     ;(println index)
     (let [new-depth-struct
           (if (> (count (children-struct index)) 0)
-            (assoc depth-struct index (+ 1 (reduce 
+            (assoc depth-struct index (+ 1 
+                                         (if (> (count (children-struct index)) 1) 
+                                         (reduce 
                                             #(if 
                                                 (> (depth-struct %1) (depth-struct %2))
                                                 (depth-struct %1)
                                                 (depth-struct %2))
-                                              (children-struct index))))
+                                              (children-struct index))
+                                         (print-n-return (depth-struct (first (children-struct index)))))))
             (assoc depth-struct index 1))]
       ;(println new-depth-struct)
       (if (= 0 index)
