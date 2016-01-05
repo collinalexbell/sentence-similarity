@@ -106,7 +106,7 @@
                                                 (depth-struct %1)
                                                 (depth-struct %2))
                                               (children-struct index))
-                                         (print-n-return (depth-struct (first (children-struct index)))))))
+                                         (depth-struct (first (children-struct index))))))
             (assoc depth-struct index 1))]
       ;(println new-depth-struct)
       (if (= 0 index)
@@ -115,12 +115,14 @@
 
 (defn insert-depths [strange-data-structure]
   (let [sense (strange-data-structure :sense)]
-    (println "<insert-depths depth-from-children-struct>")
-    (println (depth-from-children-struct
-                (print-n-return (children-from-parent sense))))
-    (println "</insert-depths depth-from-children-struct>")
-    strange-data-structure
-    ))
+    (let [ depth-data (print-n-return (depth-from-children-struct
+                (children-from-parent sense)))]
+      (map (fn [sense-level]
+          (let [level-id (sense-level :id)]
+             (map (fn [word]
+                    (assoc word :depth (depth-data level-id)) )
+                  (sense-level :data))))
+           (strange-data-structure :sense)))))
 
 (defn handle-a-sense [sense]
   (let [split-levels (rest (split sense #"\n"))] 
