@@ -37,20 +37,33 @@
  
 
 (defn handle-a-level [state level-string]
-  (let [level-num (determine-levels level-string) id (+ (state :id) 1)] 
+  ;(println "<handle-a-level level-string>")
+  ;(println level-string)
+  ;(println "</handle-a-level level-string>")
+  (let [level-num (determine-levels level-string)
+
+        id (+ (state :id) 1)
+
+        cur-path
+          (if (> (count (state :cur-path)) level-num)
+              (conj (subvec (state :cur-path) 0 level-num) id) 
+              (conj (state :cur-path) id))
+        ] 
+    ;(println "<handle-a-level level-num>")
+    ;(println level-num)
+    ;(println "</handle-a-level level-num>")
+
   {
    :id
    id
 
    :cur-path
-   (if (> (count (state :cur-path)) level-num)
-     (conj (subvec (state :cur-path) 0 level-num) id) 
-     (conj (state :cur-path) id))
+   cur-path
 
    :sense 
    (conj (state :sense)
     {:id id 
-     :parent (last (butlast (state :cur-path)))
+     :parent (last (butlast cur-path))
      :data (map ;;this will return a level broken into a vector of synonym maps
       (fn [split-synonym] 
         (hash-map 
@@ -63,6 +76,9 @@
   (rest (apply concat (map #(split %1 #"Sense") word-tree-string))))
 
 (defn children-from-parent [sense]
+  ;(println "<Children-from-parent Sense>")
+  ;(println sense)
+  ;(println "</Children-from-parent Sense>")
   (reduce 
     (fn [child-struct level] (if (level :parent) 
                                (assoc child-struct 
@@ -74,6 +90,9 @@
     sense))
 
 (defn depth-from-children-struct [children-struct]
+  ;(println "<Children Struct>")
+  ;(println children-struct)
+  ;(println "</Children Struct>")
   (loop [depth-struct (sorted-map)
          index (- (count children-struct) 1)]
     ;(println index)
@@ -96,9 +115,10 @@
 
 (defn insert-depths [strange-data-structure]
   (let [sense (strange-data-structure :sense)]
-    (println "Depth-from-children-struct")
+    (println "<insert-depths depth-from-children-struct>")
     (println (depth-from-children-struct
                 (print-n-return (children-from-parent sense))))
+    (println "</insert-depths depth-from-children-struct>")
     strange-data-structure
     ))
 
