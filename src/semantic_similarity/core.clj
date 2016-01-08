@@ -115,8 +115,8 @@
 
 (defn insert-depths [strange-data-structure]
   (let [sense (strange-data-structure :sense)]
-    (let [ depth-data (print-n-return (depth-from-children-struct
-                (children-from-parent sense)))]
+    (let [ depth-data (depth-from-children-struct
+                (children-from-parent sense))]
       (map (fn [sense-level]
           (let [level-id (sense-level :id)]
              (map (fn [word]
@@ -133,31 +133,29 @@
         )))
 
 (defn tree-to-level-map [word-tree-string]
-  (flatten 
-    (map 
-      handle-a-sense 
-      (split-str-into-senses word-tree-string)))) 
+  (filter #(contains? %1 :word) 
+    (flatten 
+      (map 
+        handle-a-sense 
+        (split-str-into-senses word-tree-string))))) 
 
-(defn collect-duplicates [word-tree]
-  (into {} (filter #(if (= "" (first %1)) false true)
-    (reduce 
-      #(if (contains? %1 (%2 :word))
-          (if (< (%1 (%2 :word)) (%2 :level))
-            (assoc %1 (%2 :word) (%2 :level))
-            %1) 
-        (assoc %1 (%2 :word) (%2 :level)))
-      {}
-      word-tree))))
+(defn tree-contains [tree word]
+  (println tree)
+  (reduce (fn [item1 item2] 
+            (if (or item1 (= (:word item2) word))
+              true
+              false))
+         false
+         tree))
 
 (defn get-common-ancestors [tree1 tree2]
-  (map 
-    #(let [word (first %1)]
-        {word (+ (tree1 word) (tree2 word))})
-    (filter 
-      #(if (contains? tree2 (first %1))
-        true
-        false)
-      tree1)))
+  (filter 
+    (fn [word-data] 
+      (println word-data) 
+      (if (tree-contains tree2 (word-data :word)) ;;This is severly broken!!!!
+      false 
+      false))
+    tree1))
 
 (defn test-semantics [word1 word2]
   (let [
@@ -166,23 +164,18 @@
     
     (-> word1 
     (get-word-trees)
-    (tree-to-level-map)
-    (collect-duplicates))
+    (tree-to-level-map))
 
     tree2
 
     (-> word2 
     (get-word-trees)
-    (tree-to-level-map)
-    (collect-duplicates))] 
+    (tree-to-level-map))] 
 
-    (get-common-ancestors tree1 tree2))) 
-
-(defn test-handle-a-sense []
-       (-> "dog"
-          (get-word-trees)
-          (tree-to-level-map)))
-       
-
-
+    (println "<tree>")
+    (println tree2)
+    (println "</tree>")
+    (println "<get-common-ancestors>")
+    (get-common-ancestors tree1 tree2) 
+    (println "</get-common-ancestors>")))
 
