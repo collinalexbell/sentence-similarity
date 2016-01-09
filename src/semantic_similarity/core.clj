@@ -1,10 +1,14 @@
 (ns semantic-similarity.core)
+(require '[clojure.math.numeric-tower :as math])
 (use '[clojure.java.shell :only [sh]])
 (use '[clojure.string :only [split]])
 
 (def letters #{\a,\b,\c,\d,\e,\f,\g,\h,\i,\j,\k,\l,\m,\n,\o,\p,\q,\r,\s,\t,\u,\v,\w,\x,\y,\z,
                \A,\B,\C,\D,\E,\F,\G,\H,\I,\J,\K,\L,\M,\N,\O,\P,\Q,\R,\S,\T,\U,\V,\W,\X,\Y,\Z})
 
+(defn print-seq [seq]
+  (doseq [item seq] (println item))
+  )
 
 (defn print-n-return [thing]
   (println thing)
@@ -140,7 +144,6 @@
         (split-str-into-senses word-tree-string))))) 
 
 (defn tree-contains [tree word]
-  (println tree)
   (reduce (fn [item1 item2] 
             (if (or item1 (= (:word item2) word))
               true
@@ -149,13 +152,27 @@
          tree))
 
 (defn get-common-ancestors [tree1 tree2]
+  (println "Printme")
   (filter 
     (fn [word-data] 
-      (println word-data) 
       (if (tree-contains tree2 (word-data :word)) ;;This is severly broken!!!!
-      false 
+      true 
       false))
     tree1))
+
+(def beta 0.45)
+(def e 2.7182818284590452353602874713527)
+
+(defn depth-score [depth]
+  (/ (- (math/expt e (* beta depth)) 
+        (math/expt e (* -1 beta depth)))
+     (+ (math/expt e (* beta depth))
+        (math/expt e (* -1 beta depth)))))
+
+(defn make-score [tree]
+  true
+)
+
 
 (defn test-semantics [word1 word2]
   (let [
@@ -176,6 +193,7 @@
     (println tree2)
     (println "</tree>")
     (println "<get-common-ancestors>")
-    (get-common-ancestors tree1 tree2) 
+    (print-seq (get-common-ancestors tree1 tree2))
+    ;(get-common-ancestors tree1 tree2)
     (println "</get-common-ancestors>")))
 
