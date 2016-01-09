@@ -152,14 +152,15 @@
          tree))
 
 (defn get-common-ancestors [tree1 tree2]
-  (println "Printme")
-  (filter 
-    (fn [word-data] 
-      (if (tree-contains tree2 (word-data :word)) ;;This is severly broken!!!!
-      true 
-      false))
-    tree1))
+  (filter #(if %1 true false)
+    (map 
+    (fn [item1 item2]
+      (if (= (item1 :word) (item2 :word))
+        (assoc item1 :length (+ (item1 :level) (item2 :level)))
+        false))
+    tree1 tree2)))
 
+(def alpha 0.2)
 (def beta 0.45)
 (def e 2.7182818284590452353602874713527)
 
@@ -169,10 +170,18 @@
      (+ (math/expt e (* beta depth))
         (math/expt e (* -1 beta depth)))))
 
-(defn make-score [tree]
-  true
-)
+(defn length-score [length]
+  (math/expt e (* -1 alpha length)))
 
+(defn make-score [tree]
+  (reduce >
+   (map (fn [item]
+         (* 
+           (depth-score (item :depth))
+           (length-score (item :length))))
+        tree)))
+
+;I NEED TO FIND LENGTH
 
 (defn test-semantics [word1 word2]
   (let [
@@ -189,11 +198,8 @@
     (get-word-trees)
     (tree-to-level-map))] 
 
-    (println "<tree>")
-    (println tree2)
-    (println "</tree>")
-    (println "<get-common-ancestors>")
-    (print-seq (get-common-ancestors tree1 tree2))
-    ;(get-common-ancestors tree1 tree2)
-    (println "</get-common-ancestors>")))
 
+    ancestors 
+    (get-common-ancestors tree1 tree2)
+
+    (make-score ancestors)))
