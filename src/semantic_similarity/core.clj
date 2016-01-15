@@ -2,6 +2,7 @@
 (require '[clojure.math.numeric-tower :as math])
 (use '[clojure.java.shell :only [sh]])
 (use '[clojure.string :only [split]])
+(use 'clojure.tools.trace)
 
 (def letters #{\a,\b,\c,\d,\e,\f,\g,\h,\i,\j,\k,\l,\m,\n,\o,\p,\q,\r,\s,\t,\u,\v,\w,\x,\y,\z,
                \A,\B,\C,\D,\E,\F,\G,\H,\I,\J,\K,\L,\M,\N,\O,\P,\Q,\R,\S,\T,\U,\V,\W,\X,\Y,\Z})
@@ -151,14 +152,35 @@
          false
          tree))
 
+(defn write-file [thing-to-write]
+  (spit "derp.txt" (str thing-to-write "\n") :append true))
+
+
 (defn get-common-ancestors [tree1 tree2]
+  (println "<tree1>")
+  (print-seq tree1)
+  (println "</tree1>")
+  (println "<tree2>")
+  (print-seq tree2)
+  (println "</tree2>")
+
+
   (filter #(if %1 true false)
     (map 
-    (fn [item1 item2]
-      (if (= (item1 :word) (item2 :word))
-        (assoc item1 :length (+ (item1 :level) (item2 :level)))
-        false))
-    tree1 tree2)))
+      (fn [item1]
+        (map
+          (fn [item2]
+            (write-file "<item1>")
+            (write-file item1)
+            (write-file "</item1>")
+            (write-file "<item2>")
+            (write-file item2)
+            (write-file "</item2")
+            (if (= (item1 :word) (item2 :word))
+              (assoc item1 :length (+ (item1 :level) (item2 :level)))
+              false))
+          tree2))
+      tree1)))
 
 (def alpha 0.2)
 (def beta 0.45)
@@ -174,7 +196,7 @@
   (math/expt e (* -1 alpha length)))
 
 (defn make-score [tree]
-  (reduce >
+  (reduce max
    (map (fn [item]
          (* 
            (depth-score (item :depth))
@@ -196,10 +218,11 @@
 
     (-> word2 
     (get-word-trees)
-    (tree-to-level-map))] 
+    (tree-to-level-map)) 
 
 
     ancestors 
-    (get-common-ancestors tree1 tree2)
+    (get-common-ancestors tree1 tree2)]
 
+    (println ancestors) 
     (make-score ancestors)))
