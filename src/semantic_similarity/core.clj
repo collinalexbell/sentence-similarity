@@ -229,5 +229,14 @@
 
     (make-score ancestors)))
 
-
-
+(defn get-si-vector [sentance1 sentance2]
+  (into {} (map
+    (fn [word1]
+      (list    ;makes a list of (word max-score)
+        word1
+        (max   ;gets the max of those scores
+          (map ;will return scores of t1i * t2
+            (fn [word2]
+              (test-semantics word1 word2))
+            (split sentance2 #" ")))))
+    (split sentance1 #" "))))
