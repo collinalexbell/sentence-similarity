@@ -151,14 +151,39 @@
          false
          tree))
 
+(defn write-file [thing-to-write]
+  (spit "derp.txt" (str thing-to-write "\n") :append true))
+
+(defn group-by-word [tree]
+  (into {} (filter (fn [item] (if (> (count (first item)) 0) true false))
+   (reduce 
+    (fn [groupings node] 
+      (if (contains? groupings (node :word))
+         (assoc 
+           groupings ;map
+           (node :word) ;key
+           (conj (groupings (node :word)) node)) ;add node to array
+         (assoc 
+           groupings ;map again
+           (node :word) ;key again
+           (list node))))
+    {}
+    tree))))
+
 (defn get-common-ancestors [tree1 tree2]
-  (filter #(if %1 true false)
+  (flatten (let [ 
+        grouping1 (group-by-word tree1)
+        grouping2 (group-by-word tree2)]
     (map 
-    (fn [item1 item2]
-      (if (= (item1 :word) (item2 :word))
-        (assoc item1 :length (+ (item1 :level) (item2 :level)))
-        false))
-    tree1 tree2)))
+      (fn [key]
+        (map
+          (fn [node1]
+            (map 
+              (fn [node2]
+                (assoc node1 :length (+ (node1 :level) (node2 :level))))
+              (grouping2 key)))
+          (grouping1 key)))
+      (keys grouping1)))))
 
 (def alpha 0.2)
 (def beta 0.45)
@@ -174,7 +199,7 @@
   (math/expt e (* -1 alpha length)))
 
 (defn make-score [tree]
-  (reduce >
+  (reduce max
    (map (fn [item]
          (* 
            (depth-score (item :depth))
@@ -196,10 +221,13 @@
 
     (-> word2 
     (get-word-trees)
-    (tree-to-level-map))] 
+    (tree-to-level-map)) 
 
 
     ancestors 
-    (get-common-ancestors tree1 tree2)
+    (get-common-ancestors tree1 tree2)]
 
     (make-score ancestors)))
+
+
+
