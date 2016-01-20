@@ -27,7 +27,7 @@
                   (if (.contains response (str "Information available for " (second %)))
                     true
                     false))
-      {"n" "noun" "v" "verb" "a" "adj" "r" "adv"})))))
+      {"n" "noun" "v" "verb"})))))
 
 (defn get-word-trees [word]
   (map #(:out (sh "wn" word (str "-hype" %))) 
@@ -227,7 +227,10 @@
     ancestors 
     (get-common-ancestors tree1 tree2)]
 
-    (make-score ancestors)))
+    (if (> (count ancestors) 0)
+      (make-score ancestors)
+      0
+      )))
 
 (defn get-half-si-vector [sentance1 sentance2]
   (print-n-return (map
