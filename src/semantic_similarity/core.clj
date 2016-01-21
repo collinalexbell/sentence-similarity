@@ -232,20 +232,27 @@
       0
       )))
 
-(def semantic-vector-threshold 0.19)
+(def semantic-vector-threshold 0.20)
+
+(defn semantic-max [semantic-structs]
+  (reduce 
+    #(if (> (:score %1) (:score %2))
+      %1 
+      %2)
+  semantic-structs))
 
 (defn get-half-si-vector [sentance1 sentance2]
   (print-n-return (map
     (fn [word1]
       (list    ;makes a list of (word max-score)
         word1
-        (print-n-return (apply max   ;gets the max of those scores
+        (print-n-return (semantic-max   ;gets the max of those scores
           (print-n-return (map ;will return scores of t1i * t2
             (fn [word2]
               (let [score (test-semantics word1 word2)]
               (if (> score semantic-vector-threshold)
-                score
-                0)))
+                {:score score :w2 word2}
+                {:score 0 :w2 word2})))
                (split sentance2 #" ")))))))
     (print-n-return (split sentance1 #" ")))))
 
@@ -256,3 +263,5 @@
        (list word 1)) 
      (split sentance1 #" "))
     (get-half-si-vector sentance2 sentance1)))
+
+
