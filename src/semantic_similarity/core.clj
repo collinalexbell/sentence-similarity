@@ -256,12 +256,34 @@
                (split sentance2 #" ")))))))
     (print-n-return (split sentance1 #" ")))))
 
+(defn get-word-counts [si-vector]
+  (reduce
+    (fn [count-map word-struct]
+      (if (contains? count-map (first word-struct))
+        (assoc count-map (first word-struct) (+ (count-map (first word-struct)) 1))
+        (assoc count-map (first word-struct) 1)))
+    {}
+    si-vector))
+
+(defn get-information-content [word-struct si-vec]
+  (let [
+        counts (get-word-counts si-vec)
+        word (first word-struct)
+        ]
+   (- 1 
+     (/
+      (Math/log (+ (counts word) 1))
+      (Math/log (+ (count si-vec) 1))))))
+
 (defn get-full-si-vector [sentance1 sentance2]
   (concat
     (map 
      (fn [word]
-       (list word 1)) 
+       (list word {:score 1 :w2 word})) 
      (split sentance1 #" "))
     (get-half-si-vector sentance2 sentance1)))
 
+(defn get-sentance-similarity []
+  
+  )
 
