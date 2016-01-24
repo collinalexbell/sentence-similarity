@@ -278,15 +278,31 @@
     {}
     si-vector))
 
+
+(def tot-words-in-corpus 329794508)
+
+(defn parse-int  [s]
+     (Integer.  (re-find  #"\d+" s )))
+
+(def frequency-map
+  (into {} (map 
+    (fn [word-&-freq]
+        (let  [[word frequency] (split word-&-freq #",")]
+          [(lower-case word) (parse-int frequency)])
+      )
+    (split (slurp "resources/word-freq.csv") #"\n"))))
+ 
+
 (defn get-information-content [word-struct si-vec]
+
   (let [
-        counts (get-word-counts si-vec)
-        word (first word-struct)
+        count (frequency-map (first word-struct))
         ]
+    (println count)
    (- 1 
      (/
-      (Math/log (+ (counts word) 1))
-      (Math/log (+ (count si-vec) 1))))))
+      (Math/log (+ (if count count 0) 1))
+      (Math/log (+ tot-words-in-corpus 1))))))
 
 (defn get-joint-word-set [sentence1 sentence2]
   (apply sorted-set (concat 
@@ -390,16 +406,11 @@
     
     s0 (cross-product scores0 weights0)
     s1 (cross-product scores1 weights1)]
-  
-    (println si-vec0)
-    (println s0)
-    (println si-vec1)
-    (println s1)
     
-  (print-n-return (/ (vec-dot-product s0 s1)
-     (* (vec-norm s0) (vec-norm s1))))))
+  (/ (vec-dot-product s0 s1)
+     (* (vec-norm s0) (vec-norm s1)))))
 
-(def semantic-over-order 0.54321);blast off, (you gotta have fun right?)
+(def semantic-over-order 0.7);blast off, (you gotta have fun right?)
 
 (defn <-by-order [item1 item2]
   (if (< 
@@ -415,7 +426,7 @@
       (pre-process-sentence sentence2)]
 
      joint-word-set
-     (get-joint-word-set (print-n-return (first sentences)) (print-n-return (second sentences)))
+     (get-joint-word-set (first sentences) (second sentences))
 
      si-vec0
      (sort <-by-order
