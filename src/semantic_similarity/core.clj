@@ -2,6 +2,7 @@
 (require '[clojure.math.numeric-tower :as math])
 (use '[clojure.java.shell :only [sh]])
 (use '[clojure.string :only [lower-case split]])
+(use '[semantic-similarity.vector :only [vec-subtract vec-add]])
 
 (def letters #{\a,\b,\c,\d,\e,\f,\g,\h,\i,\j,\k,\l,\m,\n,\o,\p,\q,\r,\s,\t,\u,\v,\w,\x,\y,\z,
                \A,\B,\C,\D,\E,\F,\G,\H,\I,\J,\K,\L,\M,\N,\O,\P,\Q,\R,\S,\T,\U,\V,\W,\X,\Y,\Z})
@@ -270,9 +271,6 @@
         counts (get-word-counts si-vec)
         word (first word-struct)
         ]
-    (println "<counts>")
-    (println counts)
-    (println "</counts>")
    (- 1 
      (/
       (Math/log (+ (counts word) 1))
@@ -320,14 +318,31 @@
   (assign-information-content-weight)
   (assign-word-order joint-word-set))) 
  
+(defn filter-by-sentence [si-vec sentence-index]
+  (filter
+    #(if (= sentence-index ((second %1) :sentence-index))
+       true false)
+    si-vec))
 
-;(defn order-score [si-vec]
-;  (let 
-;    [
-;     ()
-;     ]
-;    )
-;  )
+(defmacro extract-from-si-vec [key-to-extract si-vec]
+ `(map
+    #(~key-to-extract (second %1))
+    ~si-vec))
+
+(defn order-score [si-vec]
+  (let 
+    [r0
+     (extract-from-si-vec :word-order (filter-by-sentence si-vec 0))
+     ;(filter-by-sentence si-vec 0) 
+
+     r1
+     (extract-from-si-vec :word-order (filter-by-sentence si-vec 1))
+     ]
+
+    (println "<vec-subtract>")
+    (println (vec-subtract r0 r1))
+    (println (vec-add r0 r1))
+    (println "</vec-subtract>")))
 
 (defn get-sentence-similarity [sentence1 sentence2]
   (let [ 
