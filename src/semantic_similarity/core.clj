@@ -270,6 +270,9 @@
         counts (get-word-counts si-vec)
         word (first word-struct)
         ]
+    (println "<counts>")
+    (println counts)
+    (println "</counts>")
    (- 1 
      (/
       (Math/log (+ (counts word) 1))
@@ -283,7 +286,15 @@
      (split sentance1 #" "))
     (get-half-si-vector sentance2 sentance1)))
 
-(defn get-sentance-similarity []
-  
-  )
+(defn get-sentance-similarity [sentance1 sentance2]
+  (let [ 
+     si-vec
+     (get-full-si-vector sentance1 sentance2)]
+    (println "Mapping")
+   (map 
+     (fn [item]
+       (list
+         (first item)
+         (assoc (second item) :weight (get-information-content item si-vec))))
+      si-vec)))
 
