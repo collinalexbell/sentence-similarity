@@ -14,7 +14,7 @@
     vec1
     vec2))
 
-(defn vec-length [vec]
+(defn vec-norm [vec]
   (math/sqrt
     (reduce
       +
@@ -23,7 +23,7 @@
         vec))))
 
 (defn vec-normalize [vec]
-  (map #(/ %1 (vec-length vec))
+  (map #(/ %1 (vec-norm vec))
     vec))
 
 

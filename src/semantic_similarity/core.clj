@@ -2,7 +2,7 @@
 (require '[clojure.math.numeric-tower :as math])
 (use '[clojure.java.shell :only [sh]])
 (use '[clojure.string :only [lower-case split]])
-(use '[semantic-similarity.vector :only [vec-subtract vec-add]])
+(use '[semantic-similarity.vector :only [vec-subtract vec-add vec-norm]])
 
 (def letters #{\a,\b,\c,\d,\e,\f,\g,\h,\i,\j,\k,\l,\m,\n,\o,\p,\q,\r,\s,\t,\u,\v,\w,\x,\y,\z,
                \A,\B,\C,\D,\E,\F,\G,\H,\I,\J,\K,\L,\M,\N,\O,\P,\Q,\R,\S,\T,\U,\V,\W,\X,\Y,\Z})
@@ -339,10 +339,9 @@
      (extract-from-si-vec :word-order (filter-by-sentence si-vec 1))
      ]
 
-    (println "<vec-subtract>")
-    (println (vec-subtract r0 r1))
-    (println (vec-add r0 r1))
-    (println "</vec-subtract>")))
+    (- 1 
+       (/ (vec-norm (vec-subtract r0 r1))
+       (vec-norm (vec-add r0 r1))))))
 
 (defn get-sentence-similarity [sentence1 sentence2]
   (let [ 
@@ -351,11 +350,13 @@
       (pre-process-sentence sentence2)]
 
      joint-word-set
-     (get-joint-word-set (first sentences) (second sentences))
+     (get-joint-word-set (print-n-return (first sentences)) (print-n-return (second sentences)))
 
      si-vec
      (get-full-si-vector (first sentences) (second sentences) joint-word-set)]
 
 
-    (order-score si-vec)))
+    (order-score si-vec)
+    
+    ))
 
