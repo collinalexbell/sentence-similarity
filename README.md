@@ -1,14 +1,16 @@
 # semantic-similarity
 
-A Clojure library designed to ... well, that part is up to you.
+This library will compute the similarity between two sentences or short corpus's
 
 ## Usage
 
-FIXME
+One function is needed (get-sentence-similarity "Sentence one is awesome" "Sentence two is awsome")
+DO NOT pass in any punctuation!
+
+##Big O
+
+This thing is terribly slow. O(N^2) is my guess, it may be more. I just hacked it together.
 
 ## License
 
-Copyright © 2015 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+The IDGAF license
