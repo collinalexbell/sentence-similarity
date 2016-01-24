@@ -1,7 +1,7 @@
 (ns semantic-similarity.core)
 (require '[clojure.math.numeric-tower :as math])
 (use '[clojure.java.shell :only [sh]])
-(use '[clojure.string :only [split]])
+(use '[clojure.string :only [lower-case split]])
 
 (def letters #{\a,\b,\c,\d,\e,\f,\g,\h,\i,\j,\k,\l,\m,\n,\o,\p,\q,\r,\s,\t,\u,\v,\w,\x,\y,\z,
                \A,\B,\C,\D,\E,\F,\G,\H,\I,\J,\K,\L,\M,\N,\O,\P,\Q,\R,\S,\T,\U,\V,\W,\X,\Y,\Z})
@@ -241,7 +241,7 @@
       %2)
   semantic-structs))
 
-(defn get-half-si-vector [sentance1 sentance2]
+(defn get-half-si-vector [sentence1 sentence2]
   (print-n-return (map
     (fn [word1]
       (list    ;makes a list of (word max-score)
@@ -251,10 +251,10 @@
             (fn [word2]
               (let [score (test-semantics word1 word2)]
               (if (> score semantic-vector-threshold)
-                {:score score :w2 word2}
-                {:score 0 :w2 word2})))
-               (split sentance2 #" ")))))))
-    (print-n-return (split sentance1 #" ")))))
+                {:score score :w2 word2 :sentence-index 1}
+                {:score 0 :w2 word2 :sentence-index 1})))
+               (split sentence2 #" ")))))))
+    (print-n-return (split sentence1 #" ")))))
 
 (defn get-word-counts [si-vector]
   (reduce
@@ -278,23 +278,69 @@
       (Math/log (+ (counts word) 1))
       (Math/log (+ (count si-vec) 1))))))
 
-(defn get-full-si-vector [sentance1 sentance2]
-  (concat
-    (map 
-     (fn [word]
-       (list word {:score 1 :w2 word})) 
-     (split sentance1 #" "))
-    (get-half-si-vector sentance2 sentance1)))
+(defn get-joint-word-set [sentence1 sentence2]
+  (apply sorted-set (concat 
+    (split sentence1 #" ") 
+    (split sentence2 #" "))))
 
-(defn get-sentance-similarity [sentance1 sentance2]
-  (let [ 
-     si-vec
-     (get-full-si-vector sentance1 sentance2)]
-    (println "Mapping")
+
+(defn pre-process-sentence [sentence]
+  (lower-case sentence))
+
+(defn assign-word-order [si-vec joint-word-set]
+  ;si-vec ex 
+
+  (let [ jws-as-vec
+        (into [] joint-word-set)]
+  (map 
+    #(list 
+       (first %1)
+       (assoc 
+          (second %1)
+          :word-order
+          (.indexOf jws-as-vec (first %1))))
+    si-vec)
+  ))
+
+(defn assign-information-content-weight [si-vec]
    (map 
      (fn [item]
        (list
          (first item)
          (assoc (second item) :weight (get-information-content item si-vec))))
-      si-vec)))
+      si-vec))
+
+(defn get-full-si-vector [sentence1 sentence2 joint-word-set]
+  (-> (concat
+    (map 
+     (fn [word]
+       (list word {:score 1 :w2 word :sentence-index 0})) 
+     (split sentence1 #" "))
+    (get-half-si-vector sentence2 sentence1))
+  (assign-information-content-weight)
+  (assign-word-order joint-word-set))) 
+ 
+
+;(defn order-score [si-vec]
+;  (let 
+;    [
+;     ()
+;     ]
+;    )
+;  )
+
+(defn get-sentence-similarity [sentence1 sentence2]
+  (let [ 
+     sentences
+     [(pre-process-sentence sentence1)
+      (pre-process-sentence sentence2)]
+
+     joint-word-set
+     (get-joint-word-set (first sentences) (second sentences))
+
+     si-vec
+     (get-full-si-vector (first sentences) (second sentences) joint-word-set)]
+
+
+    (order-score si-vec)))
 
