@@ -233,7 +233,7 @@
       0
       )))
 
-(def semantic-vector-threshold 0.20)
+(def semantic-vector-threshold 0.3)
 
 (defn semantic-max [semantic-structs]
   (reduce 
@@ -242,21 +242,31 @@
       %2)
   semantic-structs))
 
+(def stop-words 
+  (split (slurp "resources/stopwords.txt") #"\n"))
+
 (defn get-half-si-vector [sentence1 sentence2]
   (map
     (fn [word1]
       (list    ;makes a list of (word max-score)
         word1
-        (print-n-return (semantic-max   ;gets the max of those scores
-          (print-n-return (map ;will return scores of t1i * t2
+        (semantic-max   ;gets the max of those scores
+          (map ;will return scores of t1i * t2
             (fn [word2]
+              ;(println "<word score>")
+              ;(println word1)
+              ;(println sentence2)
               (let [score (test-semantics word1 word2)]
-                (if (> (.indexOf sentence1 word1) -1)
+                ;(println score)
+              ;(println "</word score>")
+                (if (< (.indexOf stop-words word1) -1)
+                  {:score 0 :w2 word2 :sentence-index 1}
+                 (if (> (.indexOf sentence2 word1) -1)
                   {:score 1 :w2 word1 :sentence-index 1} 
                   (if (> score semantic-vector-threshold)
                       {:score score :w2 word2 :sentence-index 1}
-                      {:score 0 :w2 word2 :sentence-index 1} ))))
-               (split sentence2 #" ")))))))
+                      {:score 0 :w2 word2 :sentence-index 1} )))))
+               (split sentence2 #" ")))))
     (split sentence1 #" ")))
 
 (defn get-word-counts [si-vector]
@@ -288,8 +298,6 @@
   (lower-case sentence))
 
 (defn assign-word-order [si-vec joint-word-set]
-  
-
   (let [ jws-as-vec
         (into [] joint-word-set)]
   (map 
@@ -298,11 +306,7 @@
        (assoc 
           (second %1)
           :word-order
-          (if (= 0 (:sentence-index (second %1)))
-            (.indexOf jws-as-vec (first %1))
-            (if (> (:score (second %1)) 0) 
-              (.indexOf jws-as-vec (:w2 (second %1)))
-              0))))
+          (.indexOf jws-as-vec (first %1))))
     si-vec)))
 
 (defn assign-information-content-weight [si-vec]
@@ -313,6 +317,16 @@
          (assoc (second item) :weight (get-information-content item si-vec))))
       si-vec))
 
+(defn si-to-set [si-vector joint-word-set]
+  ;we will count the number of times words occur 
+  (into [] (reduce 
+    #(if (contains? %1 (first %2))
+         (assoc %1 (first %2) 
+            (assoc (second %2) :sentence-index 3))
+         (assoc %1 (first %2) (second %2)))
+    {}
+    si-vector)))
+
 (defn get-full-si-vector [sentence1 sentence2 joint-word-set]
   (-> (concat
     (map 
@@ -321,12 +335,17 @@
      (split sentence1 #" "))
     (get-half-si-vector sentence2 sentence1))
   (assign-information-content-weight)
-  (assign-word-order joint-word-set))) 
+  (assign-word-order joint-word-set)
+  (si-to-set joint-word-set))) 
  
 (defn filter-by-sentence [si-vec sentence-index]
-  (filter
-    #(if (= sentence-index ((second %1) :sentence-index))
-       true false)
+  (map
+    #(if (or (= sentence-index ((second %1) :sentence-index))
+             (= 3 ((second %1) :sentence-index)))
+       %1 
+       (list 
+         (first %1)
+         (assoc (second %1) :score 0 :word-order 0)))
     si-vec))
 
 (defmacro extract-from-si-vec [key-to-extract si-vec]
@@ -334,40 +353,60 @@
     #(~key-to-extract (second %1))
     ~si-vec))
 
-(defn order-score [si-vec]
+(defn map-si-vec-to-sentence [sentence si-vec]
+  ;(println "<sentence>")
+  ;(println sentence)
+  ;(println "</sentence>")
+  (let [si-map (into {} si-vec )]
+  (map #(do
+         (list %1 
+              (si-map %1)))
+    (split sentence #" "))))
+
+(defn order-score [sentence0 si-vec0 sentence1 si-vec1]
   (let 
     [r0
-     (extract-from-si-vec :word-order (filter-by-sentence si-vec 0))
+     (extract-from-si-vec :word-order 
+        (map-si-vec-to-sentence sentence0 si-vec0))
      ;(filter-by-sentence si-vec 0) 
 
      r1
-     (extract-from-si-vec :word-order (filter-by-sentence si-vec 1))
+     (extract-from-si-vec :word-order 
+        (map-si-vec-to-sentence sentence1 si-vec1))
      ]
-
-    (println "<subtract>")
-    (println (vec-subtract r0 r1))
-    (println "</subtract>")
     (- 1 
        (/ (vec-norm (vec-subtract r0 r1))
        (vec-norm (vec-add r0 r1))))))
 
-(defn semantic-score [si-vec]
+(defn semantic-score [si-vec0 si-vec1]
   (let [
-    scores0 (extract-from-si-vec :score (filter-by-sentence si-vec 0) )
+    scores0 (extract-from-si-vec :score si-vec0)
 
-    scores1 (extract-from-si-vec :score (filter-by-sentence si-vec 0)) 
+    scores1 (extract-from-si-vec :score si-vec1) 
 
-    weights0 (extract-from-si-vec :weight (filter-by-sentence si-vec 0))
+    weights0 (extract-from-si-vec :weight si-vec0)
 
-    weights1 (extract-from-si-vec :weight (filter-by-sentence si-vec 1))
+    weights1 (extract-from-si-vec :weight si-vec1)
     
     s0 (cross-product scores0 weights0)
     s1 (cross-product scores1 weights1)]
+  
+    (println si-vec0)
+    (println s0)
+    (println si-vec1)
+    (println s1)
     
-  (/ (vec-dot-product s0 s1)
-     (* (vec-norm s0) (vec-norm s1)))))
+  (print-n-return (/ (vec-dot-product s0 s1)
+     (* (vec-norm s0) (vec-norm s1))))))
 
-(def semantic-over-order 0.8)
+(def semantic-over-order 0.54321);blast off, (you gotta have fun right?)
+
+(defn <-by-order [item1 item2]
+  (if (< 
+    (:word-order (second item1)) 
+    (:word-order (second item2)))
+    true
+    false)) 
 
 (defn get-sentence-similarity [sentence1 sentence2]
   (let [ 
@@ -378,11 +417,20 @@
      joint-word-set
      (get-joint-word-set (print-n-return (first sentences)) (print-n-return (second sentences)))
 
-     si-vec
-     (get-full-si-vector (first sentences) (second sentences) joint-word-set)]
+     si-vec0
+     (sort <-by-order
+      (get-full-si-vector 
+        (first sentences) (second sentences) joint-word-set))
+
+     si-vec1
+     (sort <-by-order
+      (get-full-si-vector 
+        (second sentences) (first sentences) joint-word-set))] 
 
 
     (+ 
-      (* (- 1 semantic-over-order) (order-score si-vec))
-      (* semantic-over-order (semantic-score si-vec)))))
+      (* (- 1 semantic-over-order) (order-score 
+                                     (first sentences) si-vec0 
+                                     (second sentences) si-vec1))
+      (* semantic-over-order (semantic-score si-vec0 si-vec1)))))
 
