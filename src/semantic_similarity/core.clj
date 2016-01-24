@@ -2,7 +2,7 @@
 (require '[clojure.math.numeric-tower :as math])
 (use '[clojure.java.shell :only [sh]])
 (use '[clojure.string :only [lower-case split]])
-(use '[semantic-similarity.vector :only [vec-subtract vec-add vec-norm]])
+(use '[semantic-similarity.vector :only [vec-subtract vec-add vec-norm vec-dot-product cross-product]])
 
 (def letters #{\a,\b,\c,\d,\e,\f,\g,\h,\i,\j,\k,\l,\m,\n,\o,\p,\q,\r,\s,\t,\u,\v,\w,\x,\y,\z,
                \A,\B,\C,\D,\E,\F,\G,\H,\I,\J,\K,\L,\M,\N,\O,\P,\Q,\R,\S,\T,\U,\V,\W,\X,\Y,\Z})
@@ -243,7 +243,7 @@
   semantic-structs))
 
 (defn get-half-si-vector [sentence1 sentence2]
-  (print-n-return (map
+  (map
     (fn [word1]
       (list    ;makes a list of (word max-score)
         word1
@@ -251,11 +251,13 @@
           (print-n-return (map ;will return scores of t1i * t2
             (fn [word2]
               (let [score (test-semantics word1 word2)]
-              (if (> score semantic-vector-threshold)
-                {:score score :w2 word2 :sentence-index 1}
-                {:score 0 :w2 word2 :sentence-index 1})))
+                (if (> (.indexOf sentence1 word1) -1)
+                  {:score 1 :w2 word1 :sentence-index 1} 
+                  (if (> score semantic-vector-threshold)
+                      {:score score :w2 word2 :sentence-index 1}
+                      {:score 0 :w2 word2 :sentence-index 1} ))))
                (split sentence2 #" ")))))))
-    (print-n-return (split sentence1 #" ")))))
+    (split sentence1 #" ")))
 
 (defn get-word-counts [si-vector]
   (reduce
@@ -286,7 +288,7 @@
   (lower-case sentence))
 
 (defn assign-word-order [si-vec joint-word-set]
-  ;si-vec ex 
+  
 
   (let [ jws-as-vec
         (into [] joint-word-set)]
@@ -296,9 +298,12 @@
        (assoc 
           (second %1)
           :word-order
-          (.indexOf jws-as-vec (first %1))))
-    si-vec)
-  ))
+          (if (= 0 (:sentence-index (second %1)))
+            (.indexOf jws-as-vec (first %1))
+            (if (> (:score (second %1)) 0) 
+              (.indexOf jws-as-vec (:w2 (second %1)))
+              0))))
+    si-vec)))
 
 (defn assign-information-content-weight [si-vec]
    (map 
@@ -339,9 +344,30 @@
      (extract-from-si-vec :word-order (filter-by-sentence si-vec 1))
      ]
 
+    (println "<subtract>")
+    (println (vec-subtract r0 r1))
+    (println "</subtract>")
     (- 1 
        (/ (vec-norm (vec-subtract r0 r1))
        (vec-norm (vec-add r0 r1))))))
+
+(defn semantic-score [si-vec]
+  (let [
+    scores0 (extract-from-si-vec :score (filter-by-sentence si-vec 0) )
+
+    scores1 (extract-from-si-vec :score (filter-by-sentence si-vec 0)) 
+
+    weights0 (extract-from-si-vec :weight (filter-by-sentence si-vec 0))
+
+    weights1 (extract-from-si-vec :weight (filter-by-sentence si-vec 1))
+    
+    s0 (cross-product scores0 weights0)
+    s1 (cross-product scores1 weights1)]
+    
+  (/ (vec-dot-product s0 s1)
+     (* (vec-norm s0) (vec-norm s1)))))
+
+(def semantic-over-order 0.8)
 
 (defn get-sentence-similarity [sentence1 sentence2]
   (let [ 
@@ -356,7 +382,7 @@
      (get-full-si-vector (first sentences) (second sentences) joint-word-set)]
 
 
-    (order-score si-vec)
-    
-    ))
+    (+ 
+      (* (- 1 semantic-over-order) (order-score si-vec))
+      (* semantic-over-order (semantic-score si-vec)))))
 

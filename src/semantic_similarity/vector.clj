@@ -27,4 +27,12 @@
     vec))
 
 
+(defn vec-dot-product [vec1 vec2]
+  (apply + (map #(* %1 %2)
+       vec1
+       vec2)))
 
+
+(defn cross-product [vec1 vec2]
+  ;pretend that this vec is not transposed
+  (map #(* %1 %2) vec1 vec2))
