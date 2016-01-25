@@ -12,10 +12,10 @@ DO NOT pass in any punctuation!
 
 ##IMPORTANT
 
-You need to extract the contents of this library's `./resource` folder into your projects `./resource` folder.
+You need to extract the contents of this library's `./resource` folder into your project's `./resource` folder.
 
 If you know a way around this hack (like how to properly include resource files w your library), then please make a pull request showing me how. 
-Just search for `slurp` so find the two locations where I use those files
+Just search for `slurp` to find the two locations where I use those files
 
 
 ##Big O
