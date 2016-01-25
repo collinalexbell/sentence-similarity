@@ -9,7 +9,9 @@ Include `[semantic-similarity "1.0.0"]` as a dependency in project.clj
 This library has a 1 function api: `(get-sentence-similarity "Sentence one is awesome" "Sentence two is awsome")`
 DO NOT pass in any punctuation!
 
-IMPORTANT: You need to extract the contents of this library's `./resource` folder into your projects `./resource` folder
+
+IMPORTANT: You need to extract the contents of this library's `./resource` folder into your projects `./resource` folder.
+
 If you know a way around this hack (like how to properly include resource files w your library), then please make a pull request showing me how. 
 Just search for `slurp` so find the two locations where I use those files
 
